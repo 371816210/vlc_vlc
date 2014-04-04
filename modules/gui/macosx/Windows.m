@@ -288,6 +288,7 @@
 @synthesize videoView=o_video_view;
 @synthesize controlsBar=o_controls_bar;
 @synthesize inFullscreenTransition=b_in_fullscreen_transition;
+@synthesize windowShouldExitFullscreenWhenFinished=b_windowShouldExitFullscreenWhenFinished;
 
 #pragma mark -
 #pragma mark Init
@@ -709,10 +710,9 @@
 
 - (void)windowWillEnterFullScreen:(NSNotification *)notification
 {
-    // workaround, see #6668
-    [NSApp setPresentationOptions:(NSApplicationPresentationFullScreen | NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)];
-
     i_originalLevel = [self level];
+    b_windowShouldExitFullscreenWhenFinished = [[VLCMain sharedInstance] activeVideoPlayback];
+
     // b_fullscreen and b_in_fullscreen_transition must not be true yet
     [[[VLCMain sharedInstance] voutController] updateWindowLevelForHelperWindows: NSNormalWindowLevel];
     [self setLevel:NSNormalWindowLevel];
@@ -775,7 +775,6 @@
         if ([[subviews objectAtIndex:x] respondsToSelector:@selector(reshape)])
             [[subviews objectAtIndex:x] reshape];
     }
-
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification
@@ -783,9 +782,9 @@
     b_in_fullscreen_transition = YES;
     [self setFullscreen: NO];
 
-    var_SetBool(pl_Get(VLCIntf), "fullscreen", false);
-
     if ([self hasActiveVideo]) {
+        var_SetBool(pl_Get(VLCIntf), "fullscreen", false);
+
         vout_thread_t *p_vout = getVoutForActiveWindow();
         if (p_vout) {
             var_SetBool(p_vout, "fullscreen", false);
@@ -1049,6 +1048,9 @@
         o_fullscreen_anim2 = nil;
     }
 
+    b_in_fullscreen_transition = YES;
+    [self setFullscreen:NO];
+
     if (!b_animation) {
         /* We don't animate if we are not visible, instead we
          * simply fade the display */
@@ -1072,9 +1074,6 @@
 
         return;
     }
-
-    b_in_fullscreen_transition = YES;
-    [self setFullscreen:NO];
 
     [self setAlphaValue: 0.0];
     [self orderFront: self];

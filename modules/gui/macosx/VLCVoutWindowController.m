@@ -235,17 +235,25 @@
         return;
     }
 
-    // prevent visible extra window if in fullscreen
-    NSDisableScreenUpdates();
-    if (![[VLCMainWindow sharedInstance] nativeFullscreenMode] &&
-            ([o_window fullscreen] || [o_window inFullscreenTransition]))
-        [o_window leaveFullscreenWithAnimation: NO];
-
     [[o_window videoView] releaseVoutThread];
 
-    // set active video to no BEFORE closing the window to avoid stopping playback
-    // due to NSWindowWillCloseNotification
+    // set active video to no BEFORE closing the window and exiting fullscreen
+    // (avoid stopping playback due to NSWindowWillCloseNotification, preserving fullscreen state)
     [o_window setHasActiveVideo: NO];
+
+    // prevent visible extra window if in fullscreen
+    NSDisableScreenUpdates();
+    BOOL b_native = [[VLCMainWindow sharedInstance] nativeFullscreenMode];
+
+    // close fullscreen, without changing fullscreen vars
+    if (!b_native && ([o_window fullscreen] || [o_window inFullscreenTransition]))
+        [o_window leaveFullscreenWithAnimation:NO];
+
+    // native fullscreen window will not be closed if
+    // fullscreen was triggered without video
+    if ((b_native && [o_window class] == [VLCMainWindow class] && [o_window fullscreen] && [o_window windowShouldExitFullscreenWhenFinished])) {
+        [o_window toggleFullScreen:self];
+    }
 
     if ([o_window class] != [VLCMainWindow class]) {
         [o_window close];
@@ -340,11 +348,6 @@
 
             [o_current_window toggleFullScreen:self];
         }
-
-        if (b_fullscreen)
-            [NSApp setPresentationOptions:(NSApplicationPresentationFullScreen | NSApplicationPresentationAutoHideDock | NSApplicationPresentationAutoHideMenuBar)];
-        else
-            [NSApp setPresentationOptions:(NSApplicationPresentationDefault)];
     } else {
         assert(o_current_window);
 
