@@ -44,7 +44,13 @@ ifdef BUILD_ENCODERS
 FFMPEGCONF += --enable-libmp3lame --enable-libvpx --disable-decoder=libvpx --disable-decoder=libvpx_vp8 --disable-decoder=libvpx_vp9
 DEPS_ffmpeg += lame $(DEPS_lame) vpx $(DEPS_vpx)
 else
-FFMPEGCONF += --disable-encoders --disable-muxers
+#FFMPEGCONF += --disable-encoders --disable-muxers
+FFMPEGCONF += --disable-encoders --enable-encoder=png     
+FFMPEGCONF += --disable-decoders --enable-decoder=h264   
+FFMPEGCONF += --disable-muxers  
+FFMPEGCONF += --disable-demuxers --enable-demuxer=rtp --enable-demuxer=rtsp  
+FFMPEGCONF += --disable-protocols --enable-protocol=rtp --enable-protocol=rtsp  
+FFMPEGCONF += --disable-parsers --enable-parser=h264 --enable-parser=mpeg4video 
 endif
 
 # Small size
